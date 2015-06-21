@@ -151,12 +151,21 @@ create_frame(int type, int do_create)
      \todo For phase 1 the addresses are all long. We'll need a mechanism
      in the rime attributes to tell the mac to use long or short for phase 2.
   */
+#if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
+  if(packetbuf_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE) == 2) {
+    /* Use short address mode if linkaddr size is short. */
+    params.fcf.src_addr_mode = FRAME802154_SHORTADDRMODE;
+  } else {
+    params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
+  }
+#else //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
   if(LINKADDR_SIZE == 2) {
     /* Use short address mode if linkaddr size is short. */
     params.fcf.src_addr_mode = FRAME802154_SHORTADDRMODE;
   } else {
     params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
   }
+#endif //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
   params.dest_pid = mac_dst_pan_id;
 
   if(packetbuf_holds_broadcast()) {
@@ -169,11 +178,19 @@ create_frame(int type, int do_create)
     linkaddr_copy((linkaddr_t *)&params.dest_addr,
                   packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
     /* Use short address mode if linkaddr size is small */
+#if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
+    if(packetbuf_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE) == 2) {
+      params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
+    } else {
+      params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
+    }
+#else //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
     if(LINKADDR_SIZE == 2) {
       params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
     } else {
       params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
     }
+#endif //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
   }
 
   /* Set the source PAN ID to the global variable. */

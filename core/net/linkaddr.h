@@ -64,7 +64,7 @@
 
 typedef union {
   unsigned char u8[LINKADDR_SIZE];
-#if LINKADDR_SIZE == 2
+#if LINKADDR_SIZE == 2 || NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
   uint16_t u16;
 #endif /* LINKADDR_SIZE == 2 */
 } linkaddr_t;
