@@ -88,7 +88,7 @@ is_broadcast_addr(uint8_t mode, uint8_t *addr)
 }
 /*---------------------------------------------------------------------------*/
 static int
-create_frame(int type, int do_create)
+create_frame(int do_create)
 {
   frame802154_t params;
   int hdr_len;
@@ -226,13 +226,13 @@ create_frame(int type, int do_create)
 static int
 hdr_length(void)
 {
-  return create_frame(FRAME802154_DATAFRAME, 0);
+  return create_frame(0);
 }
 /*---------------------------------------------------------------------------*/
 static int
 create(void)
 {
-  return create_frame(FRAME802154_DATAFRAME, 1);
+  return create_frame(1);
 }
 /*---------------------------------------------------------------------------*/
 static int
