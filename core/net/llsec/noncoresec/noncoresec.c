@@ -101,7 +101,6 @@ get_extended_address(const linkaddr_t *addr)
 static void
 send(mac_callback_t sent, void *ptr)
 {
-  packetbuf_set_attr(PACKETBUF_ATTR_FRAME_TYPE, FRAME802154_DATAFRAME);
   packetbuf_set_attr(PACKETBUF_ATTR_SECURITY_LEVEL, LLSEC802154_SECURITY_LEVEL);
   anti_replay_set_counter();
   NETSTACK_MAC.send(sent, ptr);
