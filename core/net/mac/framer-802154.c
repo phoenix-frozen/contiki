@@ -141,11 +141,21 @@ create_frame(int do_create)
      in the rime attributes to tell the mac to use long or short for phase 2.
   */
 #if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
-  if(packetbuf_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE) == 2) {
-    /* Use short address mode if linkaddr size is short. */
-    params.fcf.src_addr_mode = FRAME802154_SHORTADDRMODE;
-  } else {
-    params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
+  switch(packetbuf_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE)) {
+    case 0:
+      params.fcf.src_addr_mode = FRAME802154_NOADDR;
+      break;
+
+    case 2:
+      params.fcf.src_addr_mode = FRAME802154_SHORTADDRMODE;
+      break;
+
+    case 8:
+      params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
+      break;
+
+    default:
+      return FRAMER_FAILED;
   }
 #else //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
   if(LINKADDR_SIZE == 2) {
@@ -155,6 +165,7 @@ create_frame(int do_create)
     params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
   }
 #endif //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
+  params.src_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
   params.dest_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
 
   if(packetbuf_holds_broadcast()) {
@@ -168,10 +179,21 @@ create_frame(int do_create)
                   packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
     /* Use short address mode if linkaddr size is small */
 #if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
-    if(packetbuf_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE) == 2) {
-      params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
-    } else {
-      params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
+    switch(packetbuf_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE)) {
+      case 0:
+        params.fcf.dest_addr_mode = FRAME802154_NOADDR;
+        break;
+
+      case 2:
+        params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
+        break;
+
+      case 8:
+        params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
+        break;
+
+      default:
+        return FRAMER_FAILED;
     }
 #else //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
     if(LINKADDR_SIZE == 2) {
