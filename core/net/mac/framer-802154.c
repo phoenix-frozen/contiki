@@ -41,6 +41,7 @@
 #include "net/llsec/llsec802154.h"
 #include "net/packetbuf.h"
 #include "lib/random.h"
+#include "frame802154.h"
 #include <string.h>
 
 #define DEBUG 0
@@ -61,18 +62,6 @@
 static uint8_t mac_dsn;
 
 static uint8_t initialized = 0;
-
-/**  \brief The 16-bit identifier of the PAN on which the device is
- *   sending to.  If this value is 0xffff, the device is not
- *   associated.
- */
-static const uint16_t mac_dst_pan_id = IEEE802154_PANID;
-
-/**  \brief The 16-bit identifier of the PAN on which the device is
- *   operating.  If this value is 0xffff, the device is not
- *   associated.
- */
-static const uint16_t mac_src_pan_id = IEEE802154_PANID;
 
 /*---------------------------------------------------------------------------*/
 static int
@@ -166,7 +155,7 @@ create_frame(int do_create)
     params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
   }
 #endif //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
-  params.dest_pid = mac_dst_pan_id;
+  params.dest_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
 
   if(packetbuf_holds_broadcast()) {
     /* Broadcast requires short address mode. */
@@ -194,7 +183,7 @@ create_frame(int do_create)
   }
 
   /* Set the source PAN ID to the global variable. */
-  params.src_pid = mac_src_pan_id;
+  params.src_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
 
   /*
    * Set up the source address using only the long address mode for
@@ -247,17 +236,32 @@ parse(void)
     packetbuf_set_attr(PACKETBUF_ATTR_FRAME_TYPE, frame.fcf.frame_type);
     
     if(frame.fcf.dest_addr_mode) {
-      if(frame.dest_pid != mac_src_pan_id &&
-          frame.dest_pid != FRAME802154_BROADCASTPANDID) {
-        /* Packet to another PAN */
-        PRINTF("15.4: for another pan %u\n", frame.dest_pid);
-        return FRAMER_FAILED;
+      if(frame.dest_pid != FRAME802154_BROADCASTPANDID) {
+        packetbuf_set_attr(PACKETBUF_ATTR_NETWORK_ID, frame.dest_pid);
       }
       if(!is_broadcast_addr(frame.fcf.dest_addr_mode, frame.dest_addr)) {
         packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, (linkaddr_t *)&frame.dest_addr);
       }
     }
     packetbuf_set_addr(PACKETBUF_ADDR_SENDER, (linkaddr_t *)&frame.src_addr);
+#if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
+    switch(frame.fcf.dest_addr_mode) {
+      case FRAME802154_SHORTADDRMODE:
+        packetbuf_set_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE, 2);
+      case FRAME802154_LONGADDRMODE:
+        packetbuf_set_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE, 8);
+      default:
+        packetbuf_set_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE, 0);
+    }
+    switch(frame.fcf.src_addr_mode) {
+      case FRAME802154_SHORTADDRMODE:
+        packetbuf_set_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE, 2);
+      case FRAME802154_LONGADDRMODE:
+        packetbuf_set_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE, 8);
+      default:
+        packetbuf_set_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE, 0);
+    }
+#endif /* NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES */
     packetbuf_set_attr(PACKETBUF_ATTR_PENDING, frame.fcf.frame_pending);
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_SEQNO, frame.seq);
 #if NETSTACK_CONF_WITH_RIME

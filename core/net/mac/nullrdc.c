@@ -264,6 +264,7 @@ send_list(mac_callback_t sent, void *ptr, struct rdc_buf_list *buf_list)
 static void
 packet_input(void)
 {
+  radio_value_t channel;
 #if NULLRDC_SEND_802154_ACK
   int original_datalen;
   uint8_t *original_dataptr;
@@ -271,6 +272,8 @@ packet_input(void)
   original_datalen = packetbuf_datalen();
   original_dataptr = packetbuf_dataptr();
 #endif
+  NETSTACK_RADIO.get_value(RADIO_PARAM_CHANNEL, &channel);
+  packetbuf_set_attr(PACKETBUF_ATTR_CHANNEL, channel);
 
 #if NULLRDC_802154_AUTOACK
   if(packetbuf_datalen() == ACK_LEN) {
