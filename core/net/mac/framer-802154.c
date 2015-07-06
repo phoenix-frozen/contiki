@@ -168,7 +168,27 @@ create_frame(int do_create)
   params.src_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
   params.dest_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
 
+#if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
+  switch(packetbuf_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE)) {
+    case 0:
+      params.fcf.dest_addr_mode = FRAME802154_NOADDR;
+          break;
+
+    case 2:
+      params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
+          break;
+
+    case 8:
+      params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
+          break;
+
+    default:
+      return FRAMER_FAILED;
+  }
+  if(params.fcf.dest_addr_mode != FRAME802154_NOADDR && packetbuf_holds_broadcast()) {
+#else
   if(packetbuf_holds_broadcast()) {
+#endif //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
     /* Broadcast requires short address mode. */
     params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
     params.dest_addr[0] = 0xFF;
@@ -177,25 +197,8 @@ create_frame(int do_create)
   } else {
     linkaddr_copy((linkaddr_t *)&params.dest_addr,
                   packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
+#if !NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
     /* Use short address mode if linkaddr size is small */
-#if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
-    switch(packetbuf_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE)) {
-      case 0:
-        params.fcf.dest_addr_mode = FRAME802154_NOADDR;
-        break;
-
-      case 2:
-        params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
-        break;
-
-      case 8:
-        params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
-        break;
-
-      default:
-        return FRAMER_FAILED;
-    }
-#else //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
     if(LINKADDR_SIZE == 2) {
       params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
     } else {
@@ -204,14 +207,12 @@ create_frame(int do_create)
 #endif //NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
   }
 
-  /* Set the source PAN ID to the global variable. */
-  params.src_pid = packetbuf_attr(PACKETBUF_ATTR_NETWORK_ID);
-
   /*
    * Set up the source address using only the long address mode for
    * phase 1.
    */
-  linkaddr_copy((linkaddr_t *)&params.src_addr, &linkaddr_node_addr);
+  //linkaddr_copy((linkaddr_t *)&params.src_addr, &linkaddr_node_addr);
+  linkaddr_copy((linkaddr_t *)&params.src_addr, packetbuf_addr(PACKETBUF_ADDR_SENDER));
 
   params.payload = packetbuf_dataptr();
   params.payload_len = packetbuf_datalen();

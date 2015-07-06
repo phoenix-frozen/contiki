@@ -115,7 +115,7 @@ send_one_packet(mac_callback_t sent, void *ptr)
   int ret;
   int last_sent_ok = 0;
 
-  packetbuf_set_addr(PACKETBUF_ADDR_SENDER, &linkaddr_node_addr);
+  //packetbuf_set_addr(PACKETBUF_ADDR_SENDER, &linkaddr_node_addr);
 #if NULLRDC_802154_AUTOACK || NULLRDC_802154_AUTOACK_HW
   packetbuf_set_attr(PACKETBUF_ATTR_MAC_ACK, 1);
 #endif /* NULLRDC_802154_AUTOACK || NULLRDC_802154_AUTOACK_HW */
