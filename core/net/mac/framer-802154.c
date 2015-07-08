@@ -79,7 +79,7 @@ is_broadcast_addr(uint8_t mode, uint8_t *addr)
 static int
 create_frame(int do_create)
 {
-  frame802154_t params;
+  static frame802154_t params;
   int hdr_len;
 
   /* init to zeros */
@@ -250,7 +250,7 @@ create(void)
 static int
 parse(void)
 {
-  frame802154_t frame;
+  static frame802154_t frame;
   int hdr_len;
   
   hdr_len = frame802154_parse(packetbuf_dataptr(), packetbuf_datalen(), &frame);
@@ -259,30 +259,40 @@ parse(void)
     packetbuf_set_attr(PACKETBUF_ATTR_FRAME_TYPE, frame.fcf.frame_type);
     
     if(frame.fcf.dest_addr_mode) {
-      if(frame.dest_pid != FRAME802154_BROADCASTPANDID) {
+      if((frame.dest_pid != FRAME802154_BROADCASTPANDID) || frame.fcf.panid_compression) {
         packetbuf_set_attr(PACKETBUF_ATTR_NETWORK_ID, frame.dest_pid);
+      } else {
+        packetbuf_set_attr(PACKETBUF_ATTR_NETWORK_ID, frame.src_pid);
       }
       if(!is_broadcast_addr(frame.fcf.dest_addr_mode, frame.dest_addr)) {
         packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, (linkaddr_t *)&frame.dest_addr);
       }
+    } else {
+      packetbuf_set_attr(PACKETBUF_ATTR_NETWORK_ID, frame.src_pid);
     }
     packetbuf_set_addr(PACKETBUF_ADDR_SENDER, (linkaddr_t *)&frame.src_addr);
 #if NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES
     switch(frame.fcf.dest_addr_mode) {
       case FRAME802154_SHORTADDRMODE:
         packetbuf_set_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE, 2);
+        break;
       case FRAME802154_LONGADDRMODE:
         packetbuf_set_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE, 8);
+        break;
       default:
         packetbuf_set_attr(PACKETBUF_ATTR_RECEIVER_ADDR_SIZE, 0);
+        break;
     }
     switch(frame.fcf.src_addr_mode) {
       case FRAME802154_SHORTADDRMODE:
         packetbuf_set_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE, 2);
+        break;
       case FRAME802154_LONGADDRMODE:
         packetbuf_set_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE, 8);
+        break;
       default:
         packetbuf_set_attr(PACKETBUF_ATTR_SENDER_ADDR_SIZE, 0);
+        break;
     }
 #endif /* NETSTACK_CONF_VARIABLE_SIZE_LINK_ADDRESSES */
     packetbuf_set_attr(PACKETBUF_ATTR_PENDING, frame.fcf.frame_pending);

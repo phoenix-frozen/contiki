@@ -138,6 +138,12 @@ set_rf_params(void) CC_NON_BANKED
   /* Populate linkaddr_node_addr. Maintain endianness */
   memcpy(&linkaddr_node_addr, &ext_addr[8 - LINKADDR_SIZE], LINKADDR_SIZE);
 
+  /* Write params to RF registers */
+  //NETSTACK_RADIO.set_value(RADIO_PARAM_PAN_ID, IEEE802154_PANID);
+  //NETSTACK_RADIO.set_value(RADIO_PARAM_16BIT_ADDR, short_addr);
+  //NETSTACK_RADIO.set_value(RADIO_PARAM_CHANNEL, CC2530_RF_CHANNEL);
+  NETSTACK_RADIO.set_object(RADIO_PARAM_64BIT_ADDR, ext_addr, 8);
+
   /* Now the address is stored MSB first */
 #if STARTUP_CONF_VERBOSE
   PUTSTRING("Rime configured with address ");
@@ -148,12 +154,6 @@ set_rf_params(void) CC_NON_BANKED
   PUTHEX(linkaddr_node_addr.u8[i]);
   PUTCHAR('\n');
 #endif
-
-  /* Write params to RF registers */
-  NETSTACK_RADIO.set_value(RADIO_PARAM_PAN_ID, IEEE802154_PANID);
-  NETSTACK_RADIO.set_value(RADIO_PARAM_16BIT_ADDR, short_addr);
-  NETSTACK_RADIO.set_value(RADIO_PARAM_CHANNEL, CC2530_RF_CHANNEL);
-  NETSTACK_RADIO.set_object(RADIO_PARAM_64BIT_ADDR, ext_addr, 8);
   return;
 }
 /*---------------------------------------------------------------------------*/
