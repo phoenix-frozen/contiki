@@ -277,7 +277,11 @@
 #define UIP_CONF_IP_FORWARD                  1
 #define UIP_CONF_BUFFER_SIZE               108
 #define RIME_CONF_NO_POLITE_ANNOUCEMENTS     0
+
+#ifndef QUEUEBUF_CONF_NUM
 #define QUEUEBUF_CONF_NUM                    8
+#endif /* QUEUEBUF_CONF_NUM */
+
 #endif /* NETSTACK_CONF_WITH_IPV6 */
 
 /* Prevent SDCC compile error when UIP_CONF_ROUTER == 0 */
