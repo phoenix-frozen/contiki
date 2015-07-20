@@ -10,6 +10,13 @@
 #include "project-conf.h"
 #endif /* PROJECT_CONF_H */
 
+/* The device only has 8KiB of memory.
+ * So if anyone uses MMEM, it shouldn't take up half...
+ */
+#ifndef MMEM_CONF_SIZE
+#define MMEM_CONF_SIZE 1024
+#endif //MMEM_CONF_SIZE
+
 /*
  * Build for SmartRF05EB+CC2530EM by default.
  * This define needs to have its final value before inclusion of models.h
