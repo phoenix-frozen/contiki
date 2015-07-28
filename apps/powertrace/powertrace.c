@@ -127,9 +127,9 @@ powertrace_print(char *str)
   all_radio = all_transmit + all_listen;
 #endif //NETSTACK_CONF_WITH_RIME
 
-  printf("%s %lu P %d.%d %lu\n",
+  printf("%s %lu P %lu\n",
          str,
-         clock_time(), linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], seqno);
+         clock_time(), seqno);
   printf("\tTotal  T%lu C%lu L%lu Tx%lu Rx%lu iTx%lu iRx%lu\n",
          all_time, all_cpu, all_lpm, all_transmit, all_listen, all_idle_transmit, all_idle_listen);
   printf("\tRecent T%lu C%lu L%lu Tx%lu Rx%lu iTx%lu iRx%lu\n",
