@@ -38,14 +38,18 @@
  */
 
 #include "contiki.h"
-#include "contiki-lib.h"
 #include "sys/compower.h"
 #include "powertrace.h"
 #include "net/rime/rime.h"
 
 #include <stdio.h>
-#include <string.h>
 
+#if NETSTACK_CONF_WITH_RIME
+#include "contiki-lib.h"
+#include <string.h>
+#endif //NETSTACK_CONF_WITH_RIME
+
+#if NETSTACK_CONF_WITH_RIME
 struct powertrace_sniff_stats {
   struct powertrace_sniff_stats *next;
   uint32_t num_input, num_output;
@@ -58,14 +62,17 @@ struct powertrace_sniff_stats {
   uint32_t last_input_txtime, last_input_rxtime;
   uint32_t last_output_txtime, last_output_rxtime;
 };
+#endif //NETSTACK_CONF_WITH_RIME
 
 #define INPUT  1
 #define OUTPUT 0
 
 #define MAX_NUM_STATS  16
 
+#if NETSTACK_CONF_WITH_RIME
 MEMB(stats_memb, struct powertrace_sniff_stats, MAX_NUM_STATS);
 LIST(stats_list);
+#endif //NETSTACK_CONF_WITH_RIME
 
 PROCESS(powertrace_process, "Periodic power output");
 /*---------------------------------------------------------------------------*/
@@ -75,51 +82,59 @@ powertrace_print(char *str)
   static uint32_t last_cpu, last_lpm, last_transmit, last_listen;
   static uint32_t last_idle_transmit, last_idle_listen;
 
-  uint32_t cpu, lpm, transmit, listen;
-  uint32_t all_cpu, all_lpm, all_transmit, all_listen;
-  uint32_t idle_transmit, idle_listen;
-  uint32_t all_idle_transmit, all_idle_listen;
+  static uint32_t cpu, lpm, transmit, listen;
+  static uint32_t all_cpu, all_lpm, all_transmit, all_listen;
+  static uint32_t idle_transmit, idle_listen;
+  static uint32_t all_idle_transmit, all_idle_listen;
 
   static uint32_t seqno;
 
-  uint32_t time, all_time, radio, all_radio;
-  
+  static uint32_t time, all_time;
+
+#if NETSTACK_CONF_WITH_RIME
+  static uint32_t radio, all_radio;
   struct powertrace_sniff_stats *s;
+#endif //NETSTACK_CONF_WITH_RIME
 
   energest_flush();
 
-  all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
-  all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
-  all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
-  all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+  all_cpu           = energest_type_time(ENERGEST_TYPE_CPU);
+  all_lpm           = energest_type_time(ENERGEST_TYPE_LPM);
+  all_transmit      = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  all_listen        = energest_type_time(ENERGEST_TYPE_LISTEN);
   all_idle_transmit = compower_idle_activity.transmit;
-  all_idle_listen = compower_idle_activity.listen;
+  all_idle_listen   = compower_idle_activity.listen;
 
-  cpu = all_cpu - last_cpu;
-  lpm = all_lpm - last_lpm;
-  transmit = all_transmit - last_transmit;
-  listen = all_listen - last_listen;
-  idle_transmit = compower_idle_activity.transmit - last_idle_transmit;
-  idle_listen = compower_idle_activity.listen - last_idle_listen;
+  cpu           = all_cpu - last_cpu;
+  lpm           = all_lpm - last_lpm;
+  transmit      = all_transmit - last_transmit;
+  listen        = all_listen - last_listen;
+  idle_transmit = all_idle_transmit - last_idle_transmit;
+  idle_listen   = all_idle_listen - last_idle_listen;
 
-  last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
-  last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
-  last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
-  last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
-  last_idle_listen = compower_idle_activity.listen;
-  last_idle_transmit = compower_idle_activity.transmit;
+  last_cpu           = all_cpu;
+  last_lpm           = all_lpm;
+  last_transmit      = all_transmit;
+  last_listen        = all_listen;
+  last_idle_listen   = all_idle_listen;
+  last_idle_transmit = all_idle_transmit;
 
-  radio = transmit + listen;
   time = cpu + lpm;
   all_time = all_cpu + all_lpm;
-  all_radio = energest_type_time(ENERGEST_TYPE_LISTEN) +
-    energest_type_time(ENERGEST_TYPE_TRANSMIT);
 
-  printf("%s %lu P %d.%d %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu (radio %d.%02d%% / %d.%02d%% tx %d.%02d%% / %d.%02d%% listen %d.%02d%% / %d.%02d%%)\n",
+#if NETSTACK_CONF_WITH_RIME
+  radio = transmit + listen;
+  all_radio = all_transmit + all_listen;
+#endif //NETSTACK_CONF_WITH_RIME
+
+  printf("%s %lu P %d.%d %lu\n",
          str,
-         clock_time(), linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], seqno,
-         all_cpu, all_lpm, all_transmit, all_listen, all_idle_transmit, all_idle_listen,
-         cpu, lpm, transmit, listen, idle_transmit, idle_listen,
+         clock_time(), linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], seqno);
+  printf("\tTotal  T%lu C%lu L%lu Tx%lu Rx%lu iTx%lu iRx%lu\n",
+         all_time, all_cpu, all_lpm, all_transmit, all_listen, all_idle_transmit, all_idle_listen);
+  printf("\tRecent T%lu C%lu L%lu Tx%lu Rx%lu iTx%lu iRx%lu\n",
+         time, cpu, lpm, transmit, listen, idle_transmit, idle_listen);
+  printf("\tRadio%% (Total / Recent) %u.%02u%% / %u.%02u%% Tx %u.%02u%% / %u.%02u%% Rx %u.%02u%% / %u.%02u%%\n",
          (int)((100L * (all_transmit + all_listen)) / all_time),
          (int)((10000L * (all_transmit + all_listen) / all_time) - (100L * (all_transmit + all_listen) / all_time) * 100),
          (int)((100L * (transmit + listen)) / time),
@@ -133,6 +148,7 @@ powertrace_print(char *str)
          (int)((100L * listen) / time),
          (int)((10000L * listen) / time - (100L * listen / time) * 100));
 
+#if NETSTACK_CONF_WITH_RIME
   for(s = list_head(stats_list); s != NULL; s = list_item_next(s)) {
 
 #if ! NETSTACK_CONF_WITH_IPV6
@@ -186,8 +202,9 @@ powertrace_print(char *str)
     s->last_input_rxtime = s->input_rxtime;
     s->last_output_txtime = s->output_txtime;
     s->last_output_rxtime = s->output_rxtime;
-    
+
   }
+#endif //NETSTACK_CONF_WITH_RIME
   seqno++;
 }
 /*---------------------------------------------------------------------------*/
@@ -225,6 +242,7 @@ powertrace_stop(void)
   process_exit(&powertrace_process);
 }
 /*---------------------------------------------------------------------------*/
+#if NETSTACK_CONF_WITH_RIME
 static void
 add_stats(struct powertrace_sniff_stats *s, int input_or_output)
 {
@@ -283,7 +301,6 @@ output_sniffer(int mac_status)
   add_packet_stats(OUTPUT);
 }
 /*---------------------------------------------------------------------------*/
-#if NETSTACK_CONF_WITH_RIME
 static void
 sniffprint(char *prefix, int seqno)
 {
@@ -309,7 +326,7 @@ sniffprint(char *prefix, int seqno)
 static void
 input_printsniffer(void)
 {
-  static int seqno = 0; 
+  static int seqno = 0;
   sniffprint("I", seqno++);
 
   if(packetbuf_attr(PACKETBUF_ATTR_CHANNEL) == 0) {
@@ -347,7 +364,6 @@ powertrace_printsniff(powertrace_onoff_t onoff)
     break;
   }
 }
-#endif /* NETSTACK_CONF_WITH_RIME */
 /*---------------------------------------------------------------------------*/
 RIME_SNIFFER(powersniff, input_sniffer, output_sniffer);
 /*---------------------------------------------------------------------------*/
@@ -363,3 +379,4 @@ powertrace_sniff(powertrace_onoff_t onoff)
     break;
   }
 }
+#endif /* NETSTACK_CONF_WITH_RIME */
