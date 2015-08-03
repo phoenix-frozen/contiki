@@ -50,7 +50,9 @@ typedef enum {
   POWERTRACE_OFF
 } powertrace_onoff_t;
 
+#if NETSTACK_CONF_WITH_RIME
 void powertrace_sniff(powertrace_onoff_t onoff);
+#endif //NETSTACK_CONF_WITH_RIME
 
 void powertrace_print(char *str);
 

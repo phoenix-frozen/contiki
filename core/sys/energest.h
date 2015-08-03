@@ -90,7 +90,7 @@ extern energest_t energest_leveldevice_current_leveltime[ENERGEST_CONF_LEVELDEVI
                            energest_current_time[type] = RTIMER_NOW(); \
 			   energest_current_mode[type] = 1; \
                            } while(0)
-#ifdef __AVR__
+#if defined(__AVR__) || defined(__SDCC_mcs51)
 /* Handle 16 bit rtimer wraparound */
 #define ENERGEST_OFF(type) if(energest_current_mode[type] != 0) do {	\
 							if (RTIMER_NOW() < energest_current_time[type]) energest_total_time[type].current += RTIMER_ARCH_SECOND; \
