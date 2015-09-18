@@ -241,7 +241,7 @@ main(void) CC_NON_BANKED
   PUTSTRING("##########################################\n");
 #endif
 
-  watchdog_init();
+  //watchdog_init();
 
   /* Initialise the H/W RNG engine. */
   random_init(0);
@@ -275,7 +275,7 @@ main(void) CC_NON_BANKED
 
   autostart_start(autostart_processes);
 
-  watchdog_start();
+  //watchdog_start();
 
   fade(LEDS_YELLOW);
 
@@ -283,7 +283,7 @@ main(void) CC_NON_BANKED
     uint8_t r;
     do {
       /* Reset watchdog and handle polls and events */
-      watchdog_periodic();
+      //watchdog_periodic();
 
 #if CLOCK_CONF_STACK_FRIENDLY
       if(sleep_flag) {
